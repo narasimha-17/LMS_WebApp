@@ -1,0 +1,28 @@
+{
+  "name": "cms-server",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "start:prisma": "node index.prisma.js",
+    "dev": "node index.js",
+    "dev:prisma": "node index.prisma.js",
+    "test:setup": "node test-prisma-setup.js",
+    "prisma:generate": "npx prisma generate --schema=prisma/schema.prisma",
+    "prisma:studio": "npx prisma studio --schema=prisma/schema.prisma",
+    "prisma:validate": "npx prisma validate --schema=prisma/schema.prisma",
+    "prisma:format": "npx prisma format --schema=prisma/schema.prisma",
+    "prisma:examples": "node prisma-examples.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "@prisma/internals": "^7.1.0",
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^5.2.1",
+    "mysql2": "^3.11.5",
+    "prisma": "^5.22.0"
+  }
+}

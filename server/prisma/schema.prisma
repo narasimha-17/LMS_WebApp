@@ -1,0 +1,1630 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model auth_tokens {
+  token_id                            Int                    @id @default(autoincrement())
+  user_id                             Int
+  token                               String                 @db.VarChar(512)
+  token_type                          auth_tokens_token_type
+  expires_at                          DateTime               @db.DateTime(0)
+  is_revoked                          Boolean?               @default(false)
+  created_at                          DateTime?              @default(now()) @db.DateTime(0)
+  created_by                          Int?
+  updated_at                          DateTime?              @default(now()) @db.DateTime(0)
+  updated_by                          Int?
+  users_auth_tokens_created_byTousers users?                 @relation("auth_tokens_created_byTousers", fields: [created_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_auth_created_by")
+  users_auth_tokens_updated_byTousers users?                 @relation("auth_tokens_updated_byTousers", fields: [updated_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_auth_updated_by")
+  users_auth_tokens_user_idTousers    users                  @relation("auth_tokens_user_idTousers", fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_auth_user")
+
+  @@index([created_by], map: "fk_auth_created_by")
+  @@index([updated_by], map: "fk_auth_updated_by")
+  @@index([token], map: "idx_auth_token")
+  @@index([user_id], map: "idx_auth_user")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model batches {
+  batch_id         Int                  @id @default(autoincrement())
+  provider_id      Int?
+  certification_id Int?
+  exam_type        String               @db.VarChar(100)
+  batch_source     batches_batch_source @default(CSV_UPLOAD)
+  batch_status     batches_batch_status @default(Submitted)
+  batch_name       String?              @db.VarChar(255)
+  remarks          String?              @db.Text
+  created_by       Int?
+  created_at       DateTime             @default(now()) @db.DateTime(0)
+  approved_by      Int?
+  approved_at      DateTime?            @db.DateTime(0)
+  updated_by       Int?
+  updated_at       DateTime             @default(now()) @db.DateTime(0)
+  questions        questions[]
+
+  @@index([certification_id], map: "idx_batches_certification")
+  @@index([exam_type], map: "idx_batches_examtype")
+  @@index([provider_id], map: "idx_batches_provider")
+  @@index([batch_status], map: "idx_batches_status")
+}
+
+model blog_posts {
+  blog_id                            BigInt                        @id @default(autoincrement())
+  blog_title                         String                        @db.VarChar(255)
+  blog_slug                          String                        @unique(map: "blog_slug") @db.VarChar(255)
+  blog_category                      String                        @db.VarChar(100)
+  blog_category_slug                 String                        @db.VarChar(100)
+  blog_subcategory                   String?                       @db.VarChar(100)
+  blog_topic                         String?                       @db.VarChar(150)
+  blog_banner_image                  String?                       @db.VarChar(255)
+  intro_text                         String                        @db.Text
+  intro_image                        String?                       @db.VarChar(255)
+  intro_layout                       blog_posts_intro_layout?      @default(TEXT_ONLY)
+  main_text                          String                        @db.Text
+  main_image                         String?                       @db.VarChar(255)
+  main_layout                        blog_posts_main_layout?       @default(LEFT_IMAGE_RIGHT_TEXT)
+  middle_text                        String?                       @db.Text
+  middle_image                       String?                       @db.VarChar(255)
+  middle_layout                      blog_posts_middle_layout?     @default(TEXT_ONLY)
+  conclusion_text                    String?                       @db.Text
+  conclusion_image                   String?                       @db.VarChar(255)
+  conclusion_layout                  blog_posts_conclusion_layout? @default(TEXT_ONLY)
+  meta_title                         String?                       @db.VarChar(255)
+  meta_description                   String?                       @db.VarChar(500)
+  primary_tags                       String?                       @db.VarChar(255)
+  secondary_tags                     String?                       @db.VarChar(255)
+  canonical_url                      String?                       @db.VarChar(255)
+  status                             blog_posts_status?            @default(DRAFT)
+  is_featured                        Boolean?                      @default(false)
+  comments_allowed                   Boolean?                      @default(true)
+  author_name                        String                        @db.VarChar(150)
+  author_id                          BigInt
+  created_at                         DateTime?                     @default(now()) @db.DateTime(0)
+  created_by                         Int
+  updated_at                         DateTime?                     @default(now()) @db.DateTime(0)
+  updated_by                         Int
+  users_blog_posts_created_byTousers users                         @relation("blog_posts_created_byTousers", fields: [created_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_blog_author_created")
+  users_blog_posts_updated_byTousers users                         @relation("blog_posts_updated_byTousers", fields: [updated_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_blog_author_updated")
+
+  @@index([created_by], map: "fk_blog_author_created")
+  @@index([updated_by], map: "fk_blog_author_updated")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model certification {
+  certification_id                      Int                          @id @default(autoincrement())
+  provider_id                           Int
+  certification_name                    String                       @db.VarChar(150)
+  certification_code                    String?                      @db.VarChar(100)
+  certification_description             String?                      @db.Text
+  certification_summary                 String?                      @db.Text
+  certificate_short_description         String?                      @db.VarChar(255)
+  certification_image_path              String?                      @db.VarChar(255)
+  certification_level                   String?                      @db.VarChar(100)
+  domain_distribution                   String?                      @db.Text
+  is_future                             Boolean?                     @default(false)
+  future_percent                        Float?                       @default(0) @db.Float
+  number_of_mock_questions              Int?                         @default(0)
+  number_of_practice_questions          Int?                         @default(0)
+  number_of_final_questions             Int?                         @default(0)
+  duration_mock                         Int?                         @default(0)
+  duration_practice                     Int?                         @default(0)
+  duration_final                        Int?                         @default(0)
+  status_active                         certification_status_active? @default(inactive)
+  active_date                           DateTime?                    @db.DateTime(0)
+  inactive_date                         DateTime?                    @db.DateTime(0)
+  created_by                            Int?
+  updated_by                            Int?
+  created_at                            DateTime?                    @default(now()) @db.DateTime(0)
+  updated_at                            DateTime?                    @default(now()) @db.DateTime(0)
+  number_of_mock_tests                  Int?                         @default(0)
+  number_of_practice_tests              Int?                         @default(0)
+  number_of_final_exams                 Int?                         @default(0)
+  mock_test_price                       Decimal?                     @default(0.00) @db.Decimal(10, 2)
+  practice_test_price                   Decimal?                     @default(0.00) @db.Decimal(10, 2)
+  final_exam_price                      Decimal?                     @default(0.00) @db.Decimal(10, 2)
+  bundle_price                          Decimal?                     @default(0.00) @db.Decimal(10, 2)
+  certification_voucher_code            String?                      @db.VarChar(50)
+  avg_minutes_per_question              Float?                       @default(2) @db.Float
+  users_certification_created_byTousers users?                       @relation("certification_created_byTousers", fields: [created_by], references: [user_id], map: "fk_certification_created_by")
+  providers                             providers                    @relation(fields: [provider_id], references: [provider_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_certification_provider")
+  users_certification_updated_byTousers users?                       @relation("certification_updated_byTousers", fields: [updated_by], references: [user_id], map: "fk_certification_updated_by")
+  certification_review                  certification_review[]
+  certification_verification            certification_verification[]
+  courses                               courses[]
+  exams                                 exams[]
+
+  @@index([created_by], map: "fk_certification_created_by")
+  @@index([updated_by], map: "fk_certification_updated_by")
+  @@index([provider_id], map: "idx_cert_provider")
+  @@index([status_active], map: "idx_cert_status_active")
+  @@index([certification_voucher_code], map: "idx_cert_voucher")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model certification_review {
+  review_id             Int                               @id @default(autoincrement())
+  certification_id      Int
+  provider_id           Int
+  user_id               Int
+  review_type           certification_review_review_type?
+  rating                Int                               @db.TinyInt
+  review_comment        String?                           @db.Text
+  improvement_suggested String?                           @db.Text
+  company_name          String?                           @db.VarChar(150)
+  user_role             String?                           @db.VarChar(100)
+  status                certification_review_status?      @default(active)
+  created_by            Int?
+  updated_by            Int?
+  created_at            DateTime?                         @default(now()) @db.DateTime(0)
+  updated_at            DateTime?                         @default(now()) @db.DateTime(0)
+  certification         certification                     @relation(fields: [certification_id], references: [certification_id], onDelete: Cascade, map: "fk_review_certification")
+  providers             providers                         @relation(fields: [provider_id], references: [provider_id], onDelete: Cascade, map: "fk_review_provider")
+  users                 users                             @relation(fields: [user_id], references: [user_id], onDelete: Cascade, map: "fk_review_user")
+
+  @@index([certification_id], map: "idx_cert_review_certification")
+  @@index([provider_id], map: "idx_cert_review_provider")
+  @@index([review_type], map: "idx_cert_review_type")
+  @@index([user_id], map: "idx_cert_review_user")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model certification_verification {
+  verification_id            Int                                             @id @default(autoincrement())
+  certification_id           Int?
+  user_id                    Int
+  exam_id                    Int?
+  verification_code          String                                          @unique(map: "verification_code") @db.VarChar(50)
+  certification_name         String                                          @db.VarChar(150)
+  certification_code         String?                                         @db.VarChar(100)
+  certification_description  String?                                         @db.Text
+  certification_version      String                                          @db.VarChar(20)
+  certification_taken_time   DateTime                                        @db.DateTime(0)
+  certification_issued_date  DateTime?                                       @db.Date
+  certification_expiry_date  DateTime?                                       @db.Date
+  marks_taken                Decimal?                                        @db.Decimal(5, 2)
+  total_marks                Decimal?                                        @db.Decimal(5, 2)
+  grade                      String?                                         @db.VarChar(10)
+  result                     certification_verification_result?
+  domain_details             Json?
+  paid_type                  certification_verification_paid_type            @default(PAID)
+  certification_status       certification_verification_certification_status @default(ACTIVE)
+  validation_link            String?                                         @db.VarChar(255)
+  certification_instructions String?                                         @db.Text
+  certificate_template_path  String?                                         @db.VarChar(500)
+  certificate_output_path    String?                                         @db.VarChar(500)
+  score_report_pdf_path      String?                                         @db.VarChar(500)
+  certificate_pdf_path       String?                                         @db.VarChar(500)
+  issuer_name                String?                                         @db.VarChar(255)
+  issuer_signature_path      String?                                         @db.VarChar(500)
+  validation_method          certification_verification_validation_method?   @default(URL)
+  qr_code_path               String?                                         @db.VarChar(500)
+  validated_at               DateTime?                                       @db.DateTime(0)
+  verification_status        certification_verification_verification_status? @default(PENDING)
+  remarks                    String?                                         @db.Text
+  badge_image_url            String?                                         @db.VarChar(255)
+  created_at                 DateTime?                                       @default(now()) @db.DateTime(0)
+  created_by                 Int?
+  updated_at                 DateTime?                                       @default(now()) @db.DateTime(0)
+  updated_by                 Int?
+  certification              certification?                                  @relation(fields: [certification_id], references: [certification_id], onUpdate: NoAction, map: "fk_verification_cert")
+  users                      users                                           @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_verification_user")
+
+  @@index([certification_id], map: "fk_verification_cert")
+  @@index([certification_name], map: "idx_cert_name")
+  @@index([verification_code], map: "idx_cert_verification_code")
+  @@index([user_id], map: "idx_user")
+}
+
+model contact_messages {
+  contact_id                               Int                           @id @default(autoincrement())
+  name                                     String                        @db.VarChar(150)
+  email                                    String                        @db.VarChar(150)
+  subject_type                             contact_messages_subject_type
+  message                                  String                        @db.Text
+  feedback                                 String?                       @db.Text
+  website_link                             String?                       @db.VarChar(500)
+  recaptcha_token                          String?                       @db.VarChar(500)
+  created_by                               Int?
+  updated_by                               Int?
+  created_at                               DateTime?                     @default(now()) @db.DateTime(0)
+  updated_at                               DateTime?                     @default(now()) @db.DateTime(0)
+  users_contact_messages_created_byTousers users?                        @relation("contact_messages_created_byTousers", fields: [created_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_contact_created_by")
+  users_contact_messages_updated_byTousers users?                        @relation("contact_messages_updated_byTousers", fields: [updated_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_contact_updated_by")
+
+  @@index([created_by], map: "fk_contact_created_by")
+  @@index([updated_by], map: "fk_contact_updated_by")
+  @@index([email], map: "idx_contact_email")
+  @@index([subject_type], map: "idx_contact_subject_type")
+}
+
+model course_resources {
+  resource_id   Int                            @id @default(autoincrement())
+  course_id     Int
+  resource_name String                         @db.VarChar(50)
+  resource_type course_resources_resource_type
+  resource_link String                         @db.VarChar(150)
+  created_at    DateTime?                      @default(now()) @db.DateTime(0)
+  updated_at    DateTime?                      @default(now()) @db.DateTime(0)
+  courses       courses                        @relation(fields: [course_id], references: [course_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_resources_course")
+
+  @@index([course_id], map: "idx_course_id")
+}
+
+model courses {
+  course_id        Int                     @id @default(autoincrement())
+  provider_id      Int
+  certification_id Int
+  price            Decimal?                @default(0.00) @db.Decimal(10, 2)
+  language         String?                 @default("English") @db.VarChar(50)
+  videos           Int?                    @default(0)
+  sheets           Int?                    @default(0)
+  extra            String?                 @db.VarChar(20)
+  status_active    courses_status_active?  @default(inactive)
+  active_date      DateTime?               @db.DateTime(0)
+  inactive_date    DateTime?               @db.DateTime(0)
+  status_publish   courses_status_publish? @default(unpublished)
+  published_date   DateTime?               @db.DateTime(0)
+  unpublished_date DateTime?               @db.DateTime(0)
+  created_by       Int
+  updated_by       Int?
+  created_at       DateTime?               @default(now()) @db.DateTime(0)
+  updated_at       DateTime?               @default(now()) @db.DateTime(0)
+  course_resources course_resources[]
+  certification    certification           @relation(fields: [certification_id], references: [certification_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_courses_certification")
+  providers        providers               @relation(fields: [provider_id], references: [provider_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_courses_provider")
+
+  @@index([certification_id], map: "idx_certification")
+  @@index([provider_id], map: "idx_provider")
+}
+
+model email_verifications {
+  id         Int       @id @default(autoincrement())
+  email      String    @db.VarChar(255)
+  token      String    @db.VarChar(64)
+  created_at DateTime? @default(now()) @db.DateTime(0)
+  expires_at DateTime  @db.DateTime(0)
+  created_by Int?
+  updated_at DateTime? @default(now()) @db.DateTime(0)
+  updated_by Int?
+}
+
+model employee_verification {
+  employee_id                                   Int                                   @id @default(autoincrement())
+  verification_code                             String                                @unique(map: "verification_code") @db.VarChar(50)
+  full_name                                     String                                @db.VarChar(150)
+  employment_type                               employee_verification_employment_type
+  start_date                                    DateTime                              @db.Date
+  end_date                                      DateTime?                             @db.Date
+  payment_status                                employee_verification_payment_status? @default(PAID)
+  job_responsibilities                          String?                               @db.Text
+  is_recommended                                employee_verification_is_recommended? @default(NO)
+  remarks                                       String?                               @db.Text
+  created_at                                    DateTime?                             @default(now()) @db.DateTime(0)
+  created_by                                    Int?
+  updated_at                                    DateTime?                             @default(now()) @db.DateTime(0)
+  updated_by                                    Int?
+  users_employee_verification_created_byTousers users?                                @relation("employee_verification_created_byTousers", fields: [created_by], references: [user_id], onUpdate: NoAction, map: "fk_employee_created_by")
+  users_employee_verification_updated_byTousers users?                                @relation("employee_verification_updated_byTousers", fields: [updated_by], references: [user_id], onUpdate: NoAction, map: "fk_employee_updated_by")
+
+  @@index([created_by], map: "idx_created_by")
+  @@index([full_name], map: "idx_employee_full_name")
+  @@index([verification_code], map: "idx_employee_verification_code")
+  @@index([updated_by], map: "idx_updated_by")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model exam_answers {
+  answer_id          Int           @id @default(autoincrement())
+  attempt_id         Int
+  question_id        Int
+  selected_options   String?       @db.VarChar(100)
+  is_correct         Boolean?
+  marks_obtained     Float?        @default(0) @db.Float
+  start_time         DateTime?     @db.DateTime(0)
+  end_time           DateTime?     @db.DateTime(0)
+  time_spent_seconds Int?
+  answered_at        DateTime?     @default(now()) @db.DateTime(0)
+  created_by         Int?
+  updated_by         Int?
+  created_at         DateTime?     @default(now()) @db.DateTime(0)
+  updated_at         DateTime?     @default(now()) @db.DateTime(0)
+  exam_attempts      exam_attempts @relation(fields: [attempt_id], references: [attempt_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ea_attempt")
+  questions          questions     @relation(fields: [question_id], references: [question_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ea_question")
+
+  @@index([question_id], map: "fk_ea_question")
+  @@index([attempt_id, question_id], map: "idx_attempt_question")
+}
+
+model exam_anti_cheat_logs {
+  log_id          Int                               @id @default(autoincrement())
+  exam_session_id Int
+  user_id         Int
+  event_type      exam_anti_cheat_logs_event_type
+  event_time      DateTime                          @default(now()) @db.DateTime(0)
+  event_payload   Json?
+  severity        exam_anti_cheat_logs_severity?    @default(low)
+  detected_by     exam_anti_cheat_logs_detected_by? @default(client)
+  notes           String?                           @db.Text
+  exam_sessions   exam_sessions                     @relation(fields: [exam_session_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ac_session")
+
+  @@index([event_type], map: "idx_ac_eventtype")
+  @@index([exam_session_id], map: "idx_ac_session")
+}
+
+model exam_attempts {
+  attempt_id                  Int                                        @id @default(autoincrement())
+  exam_id                     Int
+  user_id                     Int
+  exam_session_id             Int
+  submitted_at                DateTime                                   @default(now()) @db.DateTime(0)
+  total_questions             Int?
+  answered_count              Int?
+  skipped_count               Int?
+  marked_for_review_count     Int?
+  auto_score                  Float?                                     @db.Float
+  auto_correct                Int?
+  auto_incorrect              Int?
+  status                      exam_attempts_status?                      @default(queued)
+  evaluation_mode             exam_attempts_evaluation_mode?             @default(auto)
+  evaluator_id                Int?
+  evaluation_started_at       DateTime?                                  @db.DateTime(0)
+  evaluation_completed_at     DateTime?                                  @db.DateTime(0)
+  evaluation_error            String?                                    @db.Text
+  session_tab_switches        Int?
+  session_window_blur         Int?
+  session_network_disconnects Int?
+  session_suspicious_activity exam_attempts_session_suspicious_activity? @default(none)
+  created_by                  Int?
+  updated_by                  Int?
+  created_at                  DateTime                                   @default(now()) @db.DateTime(0)
+  updated_at                  DateTime                                   @default(now()) @db.DateTime(0)
+  exam_answers                exam_answers[]
+  exams                       exams                                      @relation(fields: [exam_id], references: [exam_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_attempt_exam")
+  exam_sessions               exam_sessions                              @relation(fields: [exam_session_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_attempt_session")
+  users                       users                                      @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_attempt_user")
+  exam_result_domains         exam_result_domains[]
+  exam_results                exam_results[]
+
+  @@index([exam_session_id], map: "fk_attempt_session")
+  @@index([user_id], map: "fk_attempt_user")
+  @@index([exam_id, user_id], map: "idx_attempt_exam_user")
+  @@index([status], map: "idx_attempt_status")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model exam_domain_distribution {
+  id                         Int       @id @default(autoincrement())
+  exam_id                    Int
+  domain_name                String    @db.VarChar(150)
+  domain_code                String?   @db.VarChar(50)
+  weightage_in_certification Float?    @db.Float
+  weightage_in_exam          Float?    @db.Float
+  domain_total_questions     Int?
+  domain_total_marks         Float?    @db.Float
+  created_by                 Int?
+  updated_by                 Int?
+  created_at                 DateTime? @default(now()) @db.DateTime(0)
+  updated_at                 DateTime? @default(now()) @db.DateTime(0)
+  exams                      exams     @relation(fields: [exam_id], references: [exam_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_edd_exam")
+
+  @@index([exam_id, domain_name], map: "idx_exam_domain")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model exam_questions {
+  exam_question_id           Int       @id @default(autoincrement())
+  exam_id                    Int
+  question_id                Int
+  order_index                Int?
+  is_mandatory               Boolean?
+  time_limit_seconds         Int?
+  marks                      Float?    @db.Float
+  negative_marks             Float?    @db.Float
+  points_weight              Float?    @db.Float
+  show_explanation_on_submit Boolean?  @default(false)
+  cloned_from_question_id    Int?
+  cloned_at                  DateTime? @db.DateTime(0)
+  cloned_by                  Int?
+  expected_time_seconds      Int?
+  tag_snapshot               String?   @db.VarChar(255)
+  is_active                  Boolean?  @default(true)
+  remarks                    String?   @db.Text
+  created_by                 Int?
+  created_at                 DateTime  @default(now()) @db.DateTime(0)
+  updated_by                 Int?
+  updated_at                 DateTime  @default(now()) @db.DateTime(0)
+  exams                      exams     @relation(fields: [exam_id], references: [exam_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_eq_exam")
+  questions                  questions @relation(fields: [question_id], references: [question_id], onUpdate: NoAction, map: "fk_eq_question")
+
+  @@unique([exam_id, order_index], map: "uq_exam_order")
+  @@unique([exam_id, question_id], map: "uq_exam_question")
+  @@index([exam_id], map: "idx_eq_exam")
+  @@index([question_id], map: "idx_eq_question")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model exam_result_domains {
+  id                     Int           @id @default(autoincrement())
+  attempt_id             Int
+  exam_id                Int
+  user_id                Int
+  domain_name            String        @db.VarChar(150)
+  domain_total_questions Int?          @default(0)
+  domain_total_marks     Float?        @default(0) @db.Float
+  domain_marks_obtained  Float?        @default(0) @db.Float
+  domain_score_percent   Float?        @db.Float
+  created_by             Int?
+  updated_by             Int?
+  created_at             DateTime?     @default(now()) @db.DateTime(0)
+  updated_at             DateTime?     @default(now()) @db.DateTime(0)
+  exam_attempts          exam_attempts @relation(fields: [attempt_id], references: [attempt_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_erd_attempt")
+  exams                  exams         @relation(fields: [exam_id], references: [exam_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_erd_exam")
+  users                  users         @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_erd_user")
+
+  @@index([exam_id], map: "fk_erd_exam")
+  @@index([user_id], map: "fk_erd_user")
+  @@index([attempt_id, domain_name], map: "idx_result_domain_attempt")
+}
+
+model exam_results {
+  result_id              Int                           @id @default(autoincrement())
+  attempt_id             Int
+  exam_id                Int
+  user_id                Int
+  exam_session_id        Int
+  submitted_at           DateTime?                     @db.DateTime(0)
+  evaluated_at           DateTime?                     @default(now()) @db.DateTime(0)
+  total_score            Float?                        @db.Float
+  achieved_score         Float?                        @db.Float
+  percentage             Float?                        @db.Float
+  accuracy               Float?                        @db.Float
+  total_questions        Int?
+  correct_answers        Int?
+  incorrect_answers      Int?
+  skipped_questions      Int?
+  marked_for_review      Int?
+  evaluation_mode        exam_results_evaluation_mode? @default(auto)
+  evaluated_by           Int?
+  evaluation_notes       String?                       @db.Text
+  trust_score            Float?                        @default(100) @db.Float
+  cheat_flag             exam_results_cheat_flag?      @default(none)
+  anti_cheat_reviewed_by Int?
+  anti_cheat_reviewed_at DateTime?                     @db.DateTime(0)
+  anti_cheat_notes       String?                       @db.Text
+  status                 exam_results_status?          @default(finalized)
+  remarks                String?                       @db.Text
+  created_by             Int?
+  created_at             DateTime                      @default(now()) @db.DateTime(0)
+  updated_by             Int?
+  updated_at             DateTime                      @default(now()) @db.DateTime(0)
+  exam_attempts          exam_attempts                 @relation(fields: [attempt_id], references: [attempt_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_result_attempt")
+  exams                  exams                         @relation(fields: [exam_id], references: [exam_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_result_exam")
+  exam_sessions          exam_sessions                 @relation(fields: [exam_session_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_result_session")
+  users                  users                         @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_result_user")
+
+  @@index([attempt_id], map: "fk_result_attempt")
+  @@index([exam_session_id], map: "fk_result_session")
+  @@index([user_id], map: "fk_result_user")
+  @@index([cheat_flag], map: "idx_result_cheatflag")
+  @@index([exam_id, user_id], map: "idx_result_exam_user")
+}
+
+model exam_sessions {
+  id                        Int                                @id @default(autoincrement())
+  user_id                   Int
+  exam_id                   Int
+  take                      Int                                @default(1)
+  status                    exam_sessions_status?              @default(IN_PROGRESS)
+  time_elapsed_seconds      Int?                               @default(0)
+  start_time                DateTime                           @default(now()) @db.DateTime(0)
+  end_time                  DateTime?                          @db.DateTime(0)
+  last_activity_at          DateTime?                          @default(now()) @db.DateTime(0)
+  ip_address                String?                            @db.VarChar(45)
+  device_id                 String?                            @db.VarChar(128)
+  browser_info              String?                            @db.Text
+  user_agent                String?                            @db.Text
+  geo_location              String?                            @db.VarChar(100)
+  tab_switch_count          Int?                               @default(0)
+  window_blur_events        Int?                               @default(0)
+  network_disconnects       Int?                               @default(0)
+  webcam_enabled            Boolean?                           @default(false)
+  suspicious_activity       exam_sessions_suspicious_activity? @default(none)
+  flagged_reason            String?                            @db.Text
+  last_known_total_answered Int?                               @default(0)
+  last_known_correct        Int?
+  created_by                Int?
+  updated_by                Int?
+  created_at                DateTime                           @default(now()) @db.DateTime(0)
+  updated_at                DateTime                           @default(now()) @db.DateTime(0)
+  exam_anti_cheat_logs      exam_anti_cheat_logs[]
+  exam_attempts             exam_attempts[]
+  exam_results              exam_results[]
+  exams                     exams                              @relation(fields: [exam_id], references: [exam_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_es_exam")
+  users                     users                              @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_es_user")
+
+  @@unique([user_id, exam_id, take], map: "uq_user_exam_take")
+  @@index([exam_id], map: "idx_exam_id")
+  @@index([last_activity_at], map: "idx_last_activity")
+  @@index([status], map: "idx_status")
+  @@index([suspicious_activity], map: "idx_suspicious_activity")
+  @@index([user_id], map: "idx_user_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model exams {
+  exam_id                  Int                        @id @default(autoincrement())
+  certification_id         Int?
+  exam_type                exams_exam_type
+  exam_title               String?                    @db.VarChar(255)
+  duration_minutes         Int?
+  total_marks              Float?                     @db.Float
+  total_questions          Int?
+  instructions             String?                    @db.Text
+  created_from_exam_id     Int?
+  status                   exams_status               @default(Inactive)
+  is_randomized            Boolean?                   @default(false)
+  created_by               Int?
+  created_at               DateTime                   @default(now()) @db.DateTime(0)
+  updated_by               Int?
+  updated_at               DateTime                   @default(now()) @db.DateTime(0)
+  created_from_user_id     Int?
+  custom_filters           Json?
+  exam_attempts            exam_attempts[]
+  exam_domain_distribution exam_domain_distribution[]
+  exam_questions           exam_questions[]
+  exam_result_domains      exam_result_domains[]
+  exam_results             exam_results[]
+  exam_sessions            exam_sessions[]
+  certification            certification?             @relation(fields: [certification_id], references: [certification_id], onUpdate: NoAction, map: "fk_exams_cert")
+
+  @@index([certification_id], map: "idx_exams_cert")
+  @@index([created_from_user_id], map: "idx_exams_created_by_user")
+  @@index([status], map: "idx_exams_status")
+}
+
+model favorites {
+  favorite_id Int                   @id @default(autoincrement())
+  user_id     Int
+  entity_type favorites_entity_type
+  entity_id   Int
+  added_at    DateTime?             @default(now()) @db.DateTime(0)
+  users       users                 @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_fav_user")
+
+  @@index([user_id, entity_type, entity_id], map: "idx_fav_user_entity")
+}
+
+model file_uploads {
+  file_id                               Int                            @id @default(autoincrement())
+  file_name                             String                         @db.VarChar(255)
+  file_path                             String                         @db.VarChar(500)
+  alt_text                              String?                        @db.VarChar(255)
+  file_type                             String?                        @db.VarChar(100)
+  file_size                             Int?
+  checksum                              String?                        @db.VarChar(100)
+  is_public                             Boolean?                       @default(true)
+  storage_provider                      file_uploads_storage_provider? @default(LOCAL)
+  status                                file_uploads_status?           @default(ACTIVE)
+  created_at                            DateTime?                      @default(now()) @db.DateTime(0)
+  updated_at                            DateTime?                      @db.DateTime(0)
+  uploaded_by                           Int
+  updated_by                            Int?
+  users_file_uploads_updated_byTousers  users?                         @relation("file_uploads_updated_byTousers", fields: [updated_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_file_updated_by")
+  users_file_uploads_uploaded_byTousers users                          @relation("file_uploads_uploaded_byTousers", fields: [uploaded_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_file_user")
+
+  @@index([updated_by], map: "fk_file_updated_by")
+  @@index([file_type], map: "idx_file_type")
+  @@index([uploaded_by], map: "idx_file_user")
+}
+
+model footer_links {
+  footer_id                            Int       @id @default(autoincrement())
+  column_name                          String?   @db.VarChar(100)
+  display_order_column_name            Int?      @default(0)
+  link_text                            String    @db.VarChar(200)
+  internal_page                        Int?
+  external_url                         String?   @db.VarChar(500)
+  display_order_link_text              Int?      @default(0)
+  is_active                            Boolean?  @default(true)
+  created_at                           DateTime? @default(now()) @db.DateTime(0)
+  created_by                           Int?
+  updated_at                           DateTime? @default(now()) @db.DateTime(0)
+  updated_by                           Int?
+  users_footer_links_created_byTousers users?    @relation("footer_links_created_byTousers", fields: [created_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_footer_created_by")
+  pages                                pages?    @relation(fields: [internal_page], references: [page_id], onUpdate: NoAction, map: "fk_footer_page")
+  users_footer_links_updated_byTousers users?    @relation("footer_links_updated_byTousers", fields: [updated_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_footer_updated_by")
+
+  @@index([created_by], map: "fk_footer_created_by")
+  @@index([internal_page], map: "fk_footer_page")
+  @@index([updated_by], map: "fk_footer_updated_by")
+  @@index([column_name], map: "idx_footer")
+}
+
+model menus {
+  menu_id                       Int        @id @default(autoincrement())
+  menu_name                     String     @db.VarChar(150)
+  menu_slug                     String     @unique(map: "menu_slug") @db.VarChar(150)
+  display_order                 Int?       @default(0)
+  is_active                     Boolean?   @default(true)
+  created_at                    DateTime?  @default(now()) @db.DateTime(0)
+  created_by                    Int?
+  updated_at                    DateTime?  @default(now()) @db.DateTime(0)
+  updated_by                    Int?
+  users_menus_created_byTousers users?     @relation("menus_created_byTousers", fields: [created_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_menu_created_by")
+  users_menus_updated_byTousers users?     @relation("menus_updated_byTousers", fields: [updated_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_menu_updated_by")
+  submenus                      submenus[]
+
+  @@index([created_by], map: "fk_menu_created_by")
+  @@index([updated_by], map: "fk_menu_updated_by")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model mock_interview_applications {
+  application_id        Int                                             @id @default(autoincrement())
+  full_name             String                                          @db.VarChar(150)
+  email                 String                                          @db.VarChar(150)
+  contact_number        String                                          @db.VarChar(20)
+  whatsapp_number       String                                          @db.VarChar(20)
+  current_location      String?                                         @db.VarChar(100)
+  interview_type        mock_interview_applications_interview_type
+  certification_name    String?                                         @db.VarChar(150)
+  tech_stack            String?                                         @db.VarChar(150)
+  duration_minutes      mock_interview_applications_duration_minutes
+  price                 Decimal                                         @db.Decimal(10, 2)
+  first_scheduled_date  DateTime                                        @db.Date
+  first_scheduled_time  DateTime                                        @db.Time(0)
+  second_scheduled_date DateTime?                                       @db.Date
+  second_scheduled_time DateTime?                                       @db.Time(0)
+  third_scheduled_date  DateTime?                                       @db.Date
+  third_scheduled_time  DateTime?                                       @db.Time(0)
+  reschedule_count      Int?                                            @default(0)
+  application_status    mock_interview_applications_application_status? @default(Submitted)
+  cancel_reason         String?                                         @db.VarChar(255)
+  payment_status        mock_interview_applications_payment_status?     @default(Completed)
+  payment_mode          mock_interview_applications_payment_mode?       @default(Online)
+  created_by            String?                                         @default("System") @db.VarChar(100)
+  created_at            DateTime?                                       @default(now()) @db.DateTime(0)
+  updated_by            String?                                         @db.VarChar(100)
+  updated_at            DateTime?                                       @db.DateTime(0)
+  is_active             Boolean?                                        @default(true)
+  deleted_flag          Boolean?                                        @default(false)
+
+  @@unique([email, first_scheduled_date, first_scheduled_time], map: "unique_email_time")
+}
+
+model mock_interview_pricing {
+  pricing_id       Int                                     @id @default(autoincrement())
+  duration_minutes mock_interview_pricing_duration_minutes @unique(map: "duration_minutes")
+  price            Decimal                                 @db.Decimal(10, 2)
+  effective_from   DateTime                                @db.Date
+  is_active        Int?                                    @default(1) @db.TinyInt
+}
+
+model otp_codes {
+  otp_id                            Int               @id @default(autoincrement())
+  user_id                           Int?
+  email                             String?           @db.VarChar(255)
+  otp_code                          String            @db.VarChar(10)
+  purpose                           otp_codes_purpose
+  is_used                           Boolean?          @default(false)
+  reset_token                       String?           @db.VarChar(255)
+  token_created_at                  DateTime?         @default(now()) @db.DateTime(0)
+  expires_at                        DateTime          @db.DateTime(0)
+  created_at                        DateTime?         @default(now()) @db.DateTime(0)
+  created_by                        Int?
+  updated_at                        DateTime?         @default(now()) @db.DateTime(0)
+  updated_by                        Int?
+  users_otp_codes_created_byTousers users?            @relation("otp_codes_created_byTousers", fields: [created_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_otp_created_by")
+  users_otp_codes_updated_byTousers users?            @relation("otp_codes_updated_byTousers", fields: [updated_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_otp_updated_by")
+  users_otp_codes_user_idTousers    users?            @relation("otp_codes_user_idTousers", fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_otp_user")
+
+  @@index([created_by], map: "fk_otp_created_by")
+  @@index([updated_by], map: "fk_otp_updated_by")
+  @@index([user_id], map: "fk_otp_user")
+  @@index([otp_code], map: "idx_otp_code")
+}
+
+model pages {
+  page_id                       Int            @id @default(autoincrement())
+  template_id                   Int?
+  title                         String         @db.VarChar(255)
+  slug                          String         @unique(map: "slug") @db.VarChar(255)
+  meta_title                    String?        @db.VarChar(150)
+  meta_description              String?        @db.Text
+  tags                          Json?
+  description                   String?        @db.Text
+  image_url                     String?        @db.VarChar(500)
+  status                        pages_status?  @default(DRAFT)
+  published_at                  DateTime?      @db.DateTime(0)
+  unpublished_at                DateTime?      @db.DateTime(0)
+  created_by                    Int?
+  updated_by                    Int?
+  created_at                    DateTime?      @default(now()) @db.DateTime(0)
+  updated_at                    DateTime?      @default(now()) @db.DateTime(0)
+  has_sections                  Boolean        @default(true)
+  use_common_footer             Boolean        @default(true)
+  use_common_header             Boolean        @default(true)
+  footer_links                  footer_links[]
+  users_pages_created_byTousers users?         @relation("pages_created_byTousers", fields: [created_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_page_created_by")
+  templates                     templates?     @relation(fields: [template_id], references: [template_id], onUpdate: NoAction, map: "fk_page_template")
+  users_pages_updated_byTousers users?         @relation("pages_updated_byTousers", fields: [updated_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_page_updated_by")
+  sections                      sections[]
+  submenus                      submenus[]
+
+  @@index([created_by], map: "fk_page_created_by")
+  @@index([template_id], map: "fk_page_template")
+  @@index([updated_by], map: "fk_page_updated_by")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model promotion_bar {
+  promotion_id          Int       @id @default(autoincrement())
+  promotion_text        String    @db.VarChar(255)
+  promotion_button_text String    @db.VarChar(50)
+  promotion_button_link String?   @default("https://genospark.in/exam") @db.VarChar(255)
+  is_active             Boolean?  @default(true)
+  display_order         Int?      @default(0)
+  start_date            DateTime? @db.DateTime(0)
+  end_date              DateTime? @db.DateTime(0)
+  background_color      String?   @default("#FFEB3B") @db.VarChar(20)
+  text_color            String?   @default("#000000") @db.VarChar(20)
+  created_by            Int?
+  updated_by            Int?
+  created_at            DateTime? @default(now()) @db.DateTime(0)
+  updated_at            DateTime? @default(now()) @db.DateTime(0)
+  remarks               String?   @db.Text
+}
+
+model providers {
+  provider_id                   Int                    @id @default(autoincrement())
+  provider_name                 String                 @db.VarChar(150)
+  description                   String?                @db.Text
+  logo_path                     String?                @db.VarChar(255)
+  website_url                   String?                @db.VarChar(255)
+  available_certification_level String?                @db.VarChar(500)
+  status                        providers_status?      @default(inactive)
+  created_by                    Int?
+  updated_by                    Int?
+  created_at                    DateTime?              @default(now()) @db.DateTime(0)
+  updated_at                    DateTime?              @default(now()) @db.DateTime(0)
+  certification                 certification[]
+  certification_review          certification_review[]
+  courses                       courses[]
+
+  @@index([available_certification_level], map: "idx_cert_level")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model questions {
+  question_id                      Int                      @id @default(autoincrement())
+  parent_question_id               Int?
+  created_from_exam_id             Int?
+  batch_id                         Int?
+  create_type                      questions_create_type    @default(BULK_CSV)
+  csv_serial_no                    Int?
+  csv_exam_type                    String?                  @db.VarChar(100)
+  provider_id                      Int?
+  provider_name                    String?                  @db.VarChar(150)
+  certification_id                 Int?
+  certification_name               String?                  @db.VarChar(255)
+  exam_type                        String?                  @db.VarChar(100)
+  question_text                    String                   @db.Text
+  option_a                         String?                  @db.Text
+  option_b                         String?                  @db.Text
+  option_c                         String?                  @db.Text
+  option_d                         String?                  @db.Text
+  option_e                         String?                  @db.Text
+  option_f                         String?                  @db.Text
+  question_type                    questions_question_type? @default(single_choice)
+  correct_options                  String?                  @db.VarChar(50)
+  correct_explanation              String?                  @db.Text
+  incorrect_explanation            String?                  @db.Text
+  domain                           String?                  @db.VarChar(100)
+  topic                            String?                  @db.VarChar(100)
+  subtopic                         String?                  @db.VarChar(100)
+  difficulty_level                 String?                  @db.VarChar(50)
+  marks                            Float?                   @default(1) @db.Float
+  negative_marks                   Float?                   @default(0) @db.Float
+  primary_tags                     String?                  @db.VarChar(100)
+  secondary_tags                   String?                  @db.VarChar(100)
+  tertiary_tags                    String?                  @db.VarChar(100)
+  is_mandatory                     Boolean?                 @default(false)
+  is_future                        Boolean?                 @default(false)
+  question_image_path              String?                  @db.VarChar(255)
+  option_a_image_path              String?                  @db.VarChar(255)
+  option_b_image_path              String?                  @db.VarChar(255)
+  option_c_image_path              String?                  @db.VarChar(255)
+  option_d_image_path              String?                  @db.VarChar(255)
+  option_e_image_path              String?                  @db.VarChar(255)
+  option_f_image_path              String?                  @db.VarChar(255)
+  correct_explanation_image_path   String?                  @db.VarChar(255)
+  incorrect_explanation_image_path String?                  @db.VarChar(255)
+  number_of_options                Int?
+  number_of_correct_options        Int?
+  status                           questions_status         @default(Inactive)
+  error_status                     String?                  @db.VarChar(100)
+  error_message                    String?                  @db.Text
+  content_hash                     String?                  @db.Char(64)
+  created_by                       Int?
+  created_at                       DateTime                 @default(now()) @db.DateTime(0)
+  updated_by                       Int?
+  updated_at                       DateTime                 @default(now()) @db.DateTime(0)
+  exam_answers                     exam_answers[]
+  exam_questions                   exam_questions[]
+  batches                          batches?                 @relation(fields: [batch_id], references: [batch_id], onUpdate: NoAction, map: "fk_questions_batch")
+  questions                        questions?               @relation("questionsToquestions", fields: [parent_question_id], references: [question_id], onUpdate: NoAction, map: "fk_questions_parent")
+  other_questions                  questions[]              @relation("questionsToquestions")
+
+  @@index([parent_question_id], map: "fk_questions_parent")
+  @@index([batch_id], map: "idx_q_batch")
+  @@index([certification_id], map: "idx_q_cert")
+  @@index([content_hash], map: "idx_q_contenthash")
+  @@index([exam_type], map: "idx_q_examtype")
+  @@index([provider_id], map: "idx_q_provider")
+  @@index([status], map: "idx_q_status")
+  @@index([topic], map: "idx_q_topic")
+}
+
+model salary_augment_applications {
+  application_id         Int                                                 @id @default(autoincrement())
+  full_name              String                                              @db.VarChar(150)
+  email                  String                                              @db.VarChar(150)
+  contact_number         String                                              @db.VarChar(20)
+  whatsapp_number        String?                                             @db.VarChar(20)
+  current_location       String                                              @db.VarChar(100)
+  current_job_title      String                                              @db.VarChar(100)
+  current_industry       salary_augment_applications_current_industry
+  years_of_experience    salary_augment_applications_years_of_experience
+  desired_career_path    salary_augment_applications_desired_career_path
+  target_cloud_platform  String?
+  self_description       String                                              @db.Text
+  preferred_contact_mode salary_augment_applications_preferred_contact_mode? @default(Email)
+  preferred_contact_time salary_augment_applications_preferred_contact_time? @default(Afternoon)
+  linkedin_url           String?                                             @db.VarChar(255)
+  resume_file_path       String                                              @db.VarChar(255)
+  application_status     salary_augment_applications_application_status?     @default(Submitted)
+  created_by             String?                                             @default("System") @db.VarChar(100)
+  created_at             DateTime?                                           @default(now()) @db.DateTime(0)
+  updated_by             String?                                             @db.VarChar(100)
+  updated_at             DateTime?                                           @db.DateTime(0)
+  is_active              Boolean?                                            @default(true)
+  deleted_flag           Boolean?                                            @default(false)
+
+  @@unique([email, contact_number], map: "unique_email_contact")
+}
+
+model sections {
+  section_id                       Int                   @id @default(autoincrement())
+  page_id                          Int
+  section_type                     sections_section_type
+  title                            String?               @db.VarChar(200)
+  content                          String?               @db.LongText
+  media_type                       sections_media_type?
+  media_url                        String?               @db.VarChar(500)
+  file_id                          Int?
+  display_order                    Int?                  @default(0)
+  is_active                        Boolean?              @default(true)
+  active_date                      DateTime?             @db.DateTime(0)
+  inactive_date                    DateTime?             @db.DateTime(0)
+  published_date                   DateTime?             @db.DateTime(0)
+  unpublished_date                 DateTime?             @db.DateTime(0)
+  created_by                       Int?
+  updated_by                       Int?
+  created_at                       DateTime?             @default(now()) @db.DateTime(0)
+  updated_at                       DateTime?             @default(now()) @db.DateTime(0)
+  users_sections_created_byTousers users?                @relation("sections_created_byTousers", fields: [created_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_section_created_by")
+  pages                            pages                 @relation(fields: [page_id], references: [page_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_section_page")
+  users_sections_updated_byTousers users?                @relation("sections_updated_byTousers", fields: [updated_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_section_updated_by")
+
+  @@index([created_by], map: "fk_section_created_by")
+  @@index([page_id], map: "fk_section_page")
+  @@index([updated_by], map: "fk_section_updated_by")
+}
+
+model site_settings {
+  setting_id                            Int                        @id @default(autoincrement()) @db.UnsignedInt
+  setting_key                           String                     @unique(map: "uq_setting_key") @db.VarChar(150)
+  setting_value                         String                     @db.Text
+  setting_type                          site_settings_setting_type @default(STRING)
+  created_at                            DateTime                   @default(now()) @db.Timestamp(0)
+  created_by                            Int?
+  updated_at                            DateTime                   @default(now()) @db.Timestamp(0)
+  updated_by                            Int?
+  users_site_settings_created_byTousers users?                     @relation("site_settings_created_byTousers", fields: [created_by], references: [user_id], onUpdate: NoAction, map: "fk_site_created_by")
+  users_site_settings_updated_byTousers users?                     @relation("site_settings_updated_byTousers", fields: [updated_by], references: [user_id], onUpdate: NoAction, map: "fk_site_updated_by")
+
+  @@index([created_by], map: "idx_created_by")
+  @@index([updated_by], map: "idx_updated_by")
+}
+
+model submenus {
+  submenu_id                       Int       @id @default(autoincrement())
+  menu_id                          Int
+  parent_submenu_id                Int?
+  submenu_title                    String    @db.VarChar(150)
+  submenu_slug                     String    @db.VarChar(150)
+  link_url                         String?   @db.VarChar(500)
+  page_id                          Int?
+  display_order                    Int?      @default(0)
+  is_active                        Boolean?  @default(true)
+  created_at                       DateTime? @default(now()) @db.DateTime(0)
+  created_by                       Int?
+  updated_at                       DateTime? @default(now()) @db.DateTime(0)
+  updated_by                       Int?
+  users_submenus_created_byTousers users?    @relation("submenus_created_byTousers", fields: [created_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_submenu_created_by")
+  menus                            menus     @relation(fields: [menu_id], references: [menu_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_submenu_menu")
+  pages                            pages?    @relation(fields: [page_id], references: [page_id], onUpdate: NoAction, map: "fk_submenu_page")
+  users_submenus_updated_byTousers users?    @relation("submenus_updated_byTousers", fields: [updated_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_submenu_updated_by")
+
+  @@index([created_by], map: "fk_submenu_created_by")
+  @@index([page_id], map: "fk_submenu_page")
+  @@index([updated_by], map: "fk_submenu_updated_by")
+  @@index([menu_id, display_order], map: "idx_submenus_menu")
+  @@index([submenu_slug], map: "idx_submenus_slug")
+}
+
+model templates {
+  template_id                       Int       @id @default(autoincrement())
+  template_name                     String    @db.VarChar(150)
+  template_code                     String    @unique(map: "template_code") @db.VarChar(100)
+  description                       String?   @db.Text
+  is_active                         Boolean?  @default(true)
+  created_at                        DateTime? @default(now()) @db.DateTime(0)
+  created_by                        Int?
+  updated_at                        DateTime? @default(now()) @db.DateTime(0)
+  updated_by                        Int?
+  pages                             pages[]
+  users_templates_created_byTousers users?    @relation("templates_created_byTousers", fields: [created_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_tpl_created_by")
+  users_templates_updated_byTousers users?    @relation("templates_updated_byTousers", fields: [updated_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_tpl_updated_by")
+
+  @@index([created_by], map: "fk_tpl_created_by")
+  @@index([updated_by], map: "fk_tpl_updated_by")
+  @@index([is_active], map: "idx_templates_active")
+}
+
+model user_activity {
+  activity_id    BigInt                     @id @default(autoincrement())
+  user_id        Int?
+  session_id     String?                    @db.VarChar(100)
+  event_type     user_activity_event_type
+  page_url       String?                    @db.VarChar(500)
+  referrer_url   String?                    @db.VarChar(500)
+  device_type    user_activity_device_type?
+  browser_name   String?                    @db.VarChar(100)
+  ip_address     String?                    @db.VarChar(50)
+  geo_country    String?                    @db.VarChar(100)
+  geo_city       String?                    @db.VarChar(100)
+  session_start  DateTime?                  @db.DateTime(0)
+  session_end    DateTime?                  @db.DateTime(0)
+  time_spent_sec Int?
+  metadata       Json?
+  created_at     DateTime?                  @default(now()) @db.DateTime(0)
+  users          users?                     @relation(fields: [user_id], references: [user_id], onUpdate: NoAction, map: "fk_user_activity_user")
+
+  @@index([event_type], map: "idx_user_activity_event")
+  @@index([page_url(length: 255)], map: "idx_user_activity_page")
+  @@index([user_id], map: "idx_user_activity_user")
+}
+
+model user_profiles {
+  profile_id                            Int       @id @default(autoincrement())
+  user_id                               Int
+  first_name                            String?   @db.VarChar(150)
+  last_name                             String?   @db.VarChar(150)
+  phone                                 String?   @db.VarChar(20)
+  avatar_url                            String?   @db.VarChar(500)
+  bio                                   String?   @db.Text
+  created_at                            DateTime? @default(now()) @db.DateTime(0)
+  created_by                            Int?
+  updated_at                            DateTime? @default(now()) @db.DateTime(0)
+  updated_by                            Int?
+  users_user_profiles_created_byTousers users?    @relation("user_profiles_created_byTousers", fields: [created_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_profile_created_by")
+  users_user_profiles_updated_byTousers users?    @relation("user_profiles_updated_byTousers", fields: [updated_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_profile_updated_by")
+  users_user_profiles_user_idTousers    users     @relation("user_profiles_user_idTousers", fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_profile_user")
+
+  @@index([created_by], map: "fk_profile_created_by")
+  @@index([updated_by], map: "fk_profile_updated_by")
+  @@index([user_id], map: "idx_profile_user")
+}
+
+model user_settings {
+  setting_id    Int                         @id @default(autoincrement())
+  user_id       Int
+  setting_key   String                      @db.VarChar(150)
+  setting_type  user_settings_setting_type? @default(STRING)
+  setting_value String                      @db.Text
+  created_at    DateTime?                   @default(now()) @db.DateTime(0)
+  created_by    Int?
+  updated_at    DateTime?                   @default(now()) @db.DateTime(0)
+  updated_by    Int?
+  users         users                       @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_user_settings_user")
+
+  @@index([user_id, setting_key], map: "idx_user_settings_key")
+}
+
+model users {
+  user_id                                                       Int                          @id @default(autoincrement())
+  first_name                                                    String                       @db.VarChar(100)
+  last_name                                                     String                       @db.VarChar(100)
+  user_name                                                     String?                      @db.VarChar(100)
+  user_location                                                 String?                      @db.VarChar(150)
+  user_city                                                     String?                      @db.VarChar(100)
+  user_country                                                  String?                      @db.VarChar(100)
+  email                                                         String                       @unique(map: "email") @db.VarChar(150)
+  password_hash                                                 String                       @db.VarChar(255)
+  remember_me_token                                             String?                      @db.VarChar(255)
+  failed_login_attempts                                         Int?                         @default(0)
+  is_locked                                                     Boolean?                     @default(false)
+  last_login                                                    DateTime?                    @db.DateTime(0)
+  role                                                          users_role?
+  status_active                                                 users_status_active?         @default(inactive)
+  active_date                                                   DateTime?                    @db.DateTime(0)
+  inactive_date                                                 DateTime?                    @db.DateTime(0)
+  created_by                                                    Int?
+  updated_by                                                    Int?
+  created_at                                                    DateTime?                    @default(now()) @db.DateTime(0)
+  updated_at                                                    DateTime?                    @default(now()) @db.DateTime(0)
+  auth_tokens_auth_tokens_created_byTousers                     auth_tokens[]                @relation("auth_tokens_created_byTousers")
+  auth_tokens_auth_tokens_updated_byTousers                     auth_tokens[]                @relation("auth_tokens_updated_byTousers")
+  auth_tokens_auth_tokens_user_idTousers                        auth_tokens[]                @relation("auth_tokens_user_idTousers")
+  blog_posts_blog_posts_created_byTousers                       blog_posts[]                 @relation("blog_posts_created_byTousers")
+  blog_posts_blog_posts_updated_byTousers                       blog_posts[]                 @relation("blog_posts_updated_byTousers")
+  certification_certification_created_byTousers                 certification[]              @relation("certification_created_byTousers")
+  certification_certification_updated_byTousers                 certification[]              @relation("certification_updated_byTousers")
+  certification_review                                          certification_review[]
+  certification_verification                                    certification_verification[]
+  contact_messages_contact_messages_created_byTousers           contact_messages[]           @relation("contact_messages_created_byTousers")
+  contact_messages_contact_messages_updated_byTousers           contact_messages[]           @relation("contact_messages_updated_byTousers")
+  employee_verification_employee_verification_created_byTousers employee_verification[]      @relation("employee_verification_created_byTousers")
+  employee_verification_employee_verification_updated_byTousers employee_verification[]      @relation("employee_verification_updated_byTousers")
+  exam_attempts                                                 exam_attempts[]
+  exam_result_domains                                           exam_result_domains[]
+  exam_results                                                  exam_results[]
+  exam_sessions                                                 exam_sessions[]
+  favorites                                                     favorites[]
+  file_uploads_file_uploads_updated_byTousers                   file_uploads[]               @relation("file_uploads_updated_byTousers")
+  file_uploads_file_uploads_uploaded_byTousers                  file_uploads[]               @relation("file_uploads_uploaded_byTousers")
+  footer_links_footer_links_created_byTousers                   footer_links[]               @relation("footer_links_created_byTousers")
+  footer_links_footer_links_updated_byTousers                   footer_links[]               @relation("footer_links_updated_byTousers")
+  menus_menus_created_byTousers                                 menus[]                      @relation("menus_created_byTousers")
+  menus_menus_updated_byTousers                                 menus[]                      @relation("menus_updated_byTousers")
+  otp_codes_otp_codes_created_byTousers                         otp_codes[]                  @relation("otp_codes_created_byTousers")
+  otp_codes_otp_codes_updated_byTousers                         otp_codes[]                  @relation("otp_codes_updated_byTousers")
+  otp_codes_otp_codes_user_idTousers                            otp_codes[]                  @relation("otp_codes_user_idTousers")
+  pages_pages_created_byTousers                                 pages[]                      @relation("pages_created_byTousers")
+  pages_pages_updated_byTousers                                 pages[]                      @relation("pages_updated_byTousers")
+  sections_sections_created_byTousers                           sections[]                   @relation("sections_created_byTousers")
+  sections_sections_updated_byTousers                           sections[]                   @relation("sections_updated_byTousers")
+  site_settings_site_settings_created_byTousers                 site_settings[]              @relation("site_settings_created_byTousers")
+  site_settings_site_settings_updated_byTousers                 site_settings[]              @relation("site_settings_updated_byTousers")
+  submenus_submenus_created_byTousers                           submenus[]                   @relation("submenus_created_byTousers")
+  submenus_submenus_updated_byTousers                           submenus[]                   @relation("submenus_updated_byTousers")
+  templates_templates_created_byTousers                         templates[]                  @relation("templates_created_byTousers")
+  templates_templates_updated_byTousers                         templates[]                  @relation("templates_updated_byTousers")
+  user_activity                                                 user_activity[]
+  user_profiles_user_profiles_created_byTousers                 user_profiles[]              @relation("user_profiles_created_byTousers")
+  user_profiles_user_profiles_updated_byTousers                 user_profiles[]              @relation("user_profiles_updated_byTousers")
+  user_profiles_user_profiles_user_idTousers                    user_profiles[]              @relation("user_profiles_user_idTousers")
+  user_settings                                                 user_settings[]
+
+  @@index([email], map: "idx_email")
+}
+
+enum mock_interview_pricing_duration_minutes {
+  MIN_30 @map("30")
+  MIN_45 @map("45")
+  MIN_60 @map("60")
+}
+
+enum exams_exam_type {
+  mock
+  practice
+  final
+  custom
+}
+
+enum favorites_entity_type {
+  PAGE
+  COMPONENT
+  MENU
+  BLOG_POST
+  LEGAL
+}
+
+enum sections_section_type {
+  HERO
+  MIDDLE
+  SIDEBAR_LEFT
+  SIDEBAR_RIGHT
+  FOOTER
+  BANNER
+  BLOG_POST
+  FAQ_ITEM
+  LEGAL_ITEM
+}
+
+enum auth_tokens_token_type {
+  ACCESS
+  REFRESH
+  API_KEY
+}
+
+enum contact_messages_subject_type {
+  FORGOT_PASSWORD
+  ACCOUNT_BLOCKED
+  REFUND
+  TECHNICAL_ERROR
+  ORDER_ISSUES
+  COURSE_ISSUES
+  EXAM_ISSUES
+  COURSE_DISCOUNT
+  FEEDBACK
+  OTHER
+}
+
+enum course_resources_resource_type {
+  video
+  pdf
+  exam
+}
+
+enum employee_verification_employment_type {
+  FULL_TIME
+  PART_TIME
+  CONTRACTOR
+  INTERN
+}
+
+enum exam_anti_cheat_logs_event_type {
+  tab_switch
+  window_blur
+  copy_paste_attempt
+  screenshot_attempt
+  network_disconnect
+  webcam_disabled
+  webcam_multiple_faces
+  ai_flagged_suspicion
+  unauthorized_app_detected
+  clipboard_activity
+}
+
+enum site_settings_setting_type {
+  STRING
+  NUMBER
+  BOOLEAN
+  JSON
+}
+
+enum user_activity_event_type {
+  page_view
+  click
+  add_to_cart
+  checkout
+  blog_read
+  login
+  logout
+  promo_click
+}
+
+enum user_settings_setting_type {
+  STRING
+  NUMBER
+  BOOLEAN
+  JSON
+}
+
+enum batches_batch_source {
+  CSV_UPLOAD
+  EXAM_CLONE
+}
+
+enum certification_review_review_type {
+  practice_test
+  final_test
+  practice_final
+}
+
+enum exam_sessions_status {
+  IN_PROGRESS
+  SUBMITTED
+  TIMEOUT
+  FLAGGED
+}
+
+enum otp_codes_purpose {
+  LOGIN
+  RESET
+  VERIFY_EMAIL
+}
+
+enum questions_create_type {
+  BULK_CSV
+  MANUAL
+  FROM_EXAM
+}
+
+enum batches_batch_status {
+  Submitted
+  Approved
+}
+
+enum sections_media_type {
+  IMAGE
+  VIDEO
+  PDF
+  CHEATSHEET
+  PPT
+  MOCK_TEST
+}
+
+enum employee_verification_payment_status {
+  PAID
+  UNPAID
+}
+
+enum exam_anti_cheat_logs_severity {
+  low
+  medium
+  high
+  critical
+}
+
+enum mock_interview_applications_interview_type {
+  Certification
+  Client
+}
+
+enum providers_status {
+  active
+  inactive
+}
+
+enum user_activity_device_type {
+  desktop
+  mobile
+  tablet
+}
+
+enum exam_anti_cheat_logs_detected_by {
+  client
+  server
+  ai_model
+  proctor
+}
+
+enum salary_augment_applications_current_industry {
+  IT
+  Non_IT        @map("Non-IT")
+  Education
+  Healthcare
+  Finance
+  Manufacturing
+  Others
+}
+
+enum courses_status_active {
+  active
+  inactive
+}
+
+enum employee_verification_is_recommended {
+  YES
+  NO
+}
+
+enum file_uploads_storage_provider {
+  LOCAL
+  AZURE_BLOB
+  AWS_S3
+  GCS
+}
+
+enum salary_augment_applications_years_of_experience {
+  year_less_than_1 @map("<1 year")
+  years_1_to_3     @map("1-3 years")
+  years_3_to_5     @map("3-5 years")
+  years_5_to_10    @map("5-10 years")
+  years_10_plus    @map("10+ years")
+}
+
+enum exams_status {
+  Active
+  Inactive
+}
+
+enum file_uploads_status {
+  ACTIVE
+  INACTIVE
+  DELETED
+}
+
+enum mock_interview_applications_duration_minutes {
+  MIN_30 @map("30")
+  MIN_45 @map("45")
+  MIN_60 @map("60")
+}
+
+enum pages_status {
+  DRAFT
+  PUBLISHED
+  UNPUBLISHED
+}
+
+enum salary_augment_applications_desired_career_path {
+  Cloud_Computing  @map("Cloud Computing")
+  DevOps
+  Data_Engineering @map("Data Engineering")
+  AI_ML            @map("AI-ML")
+  Others
+}
+
+enum blog_posts_intro_layout {
+  LEFT_IMAGE_RIGHT_TEXT
+  RIGHT_IMAGE_LEFT_TEXT
+  TEXT_ONLY
+}
+
+enum certification_review_status {
+  active
+  inactive
+}
+
+enum courses_status_publish {
+  published
+  unpublished
+}
+
+enum exam_attempts_status {
+  queued
+  evaluating
+  evaluated
+  error
+}
+
+enum salary_augment_applications_preferred_contact_mode {
+  Email
+  Phone
+  WhatsApp
+}
+
+enum blog_posts_main_layout {
+  LEFT_IMAGE_RIGHT_TEXT
+  RIGHT_IMAGE_LEFT_TEXT
+  TEXT_ONLY
+}
+
+enum exam_attempts_evaluation_mode {
+  auto
+  manual
+  hybrid
+}
+
+enum salary_augment_applications_preferred_contact_time {
+  Morning
+  Afternoon
+  Evening
+}
+
+enum users_role {
+  subscriber
+  instructor
+  admin
+}
+
+enum users_status_active {
+  active
+  inactive
+}
+
+enum certification_verification_result {
+  PASS
+  FAIL
+}
+
+enum blog_posts_middle_layout {
+  LEFT_IMAGE_RIGHT_TEXT
+  RIGHT_IMAGE_LEFT_TEXT
+  TEXT_ONLY
+}
+
+enum exam_results_evaluation_mode {
+  auto
+  manual
+  hybrid
+}
+
+enum salary_augment_applications_application_status {
+  Submitted
+  In_Review   @map("In Review")
+  Shortlisted
+  Rejected
+  Completed
+}
+
+enum certification_verification_paid_type {
+  PAID
+  UNPAID
+}
+
+enum certification_status_active {
+  active
+  inactive
+}
+
+enum certification_verification_certification_status {
+  ACTIVE
+  INACTIVE
+}
+
+enum exam_sessions_suspicious_activity {
+  none
+  minor
+  major
+  critical
+}
+
+enum mock_interview_applications_application_status {
+  Submitted
+  Scheduled
+  Rescheduled
+  Completed
+  Cancelled
+}
+
+enum blog_posts_conclusion_layout {
+  LEFT_IMAGE_RIGHT_TEXT
+  RIGHT_IMAGE_LEFT_TEXT
+  TEXT_ONLY
+}
+
+enum questions_question_type {
+  single_choice
+  multiple_choice
+  true_false
+  drag_and_drop
+}
+
+enum exam_results_cheat_flag {
+  none
+  suspected
+  confirmed
+}
+
+enum mock_interview_applications_payment_status {
+  Pending
+  Completed
+  Failed
+  Refund_Initiated
+  Refund
+}
+
+enum exam_attempts_session_suspicious_activity {
+  none
+  minor
+  major
+  critical
+}
+
+enum mock_interview_applications_payment_mode {
+  Online
+  Offline
+}
+
+enum exam_results_status {
+  finalized
+  revoked
+}
+
+enum blog_posts_status {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum certification_verification_validation_method {
+  URL
+  QR_CODE
+  EMAIL
+}
+
+enum certification_verification_verification_status {
+  PENDING
+  VERIFIED
+  EXPIRED
+  REVOKED
+}
+
+enum questions_status {
+  Active
+  Inactive
+}
+
+
+
+
+model roles {
+  role_id     Int       @id @default(autoincrement())
+  role_name   String    @unique
+  slug        String?   @unique
+  description String?
+  is_protected Boolean  @default(false)
+
+  created_by  Int?
+  updated_by  Int?
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+
+  userRoleModule     user_role_module[]
+  roleModuleDefault  role_module_default[]
+}
+
+model modules {
+  module_id   Int      @id @default(autoincrement())
+  module_name String
+  slug        String   @unique
+  description String?
+  is_protected Boolean @default(false)
+
+  created_by  Int?
+  updated_by  Int?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  roleModuleDefault role_module_default[]
+  userRoleModule    user_role_module[]
+}
+
+model user_role_module {
+  ur_id      Int      @id @default(autoincrement())
+
+  user_id    Int
+  role_id    Int
+  module_id  Int
+  can_access Boolean  @default(true)
+
+  created_by Int?
+  updated_by Int?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  user   users   @relation(fields: [user_id], references: [user_id])
+  role   roles   @relation(fields: [role_id], references: [role_id])
+  module modules @relation(fields: [module_id], references: [module_id])
+
+  @@index([user_id])
+  @@index([role_id])
+  @@index([module_id])
+  @@index([user_id, role_id])
+}
+
+model role_module_default {
+  rmd_id     Int      @id @default(autoincrement())
+
+  role_id    Int
+  module_id  Int
+  can_access Boolean @default(true)
+
+  created_by Int?
+  updated_by Int?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  role   roles   @relation(fields: [role_id], references: [role_id])
+  module modules @relation(fields: [module_id], references: [module_id])
+
+  @@index([role_id])
+  @@index([module_id])
+}
+
+
+
+enum questions_difficulty {
+  easy
+  medium
+  hard
+}
